@@ -3,6 +3,7 @@ package net.cavoj.skinpls;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -22,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
+import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static net.minecraft.server.command.CommandManager.literal;
 import static net.minecraft.server.command.CommandManager.argument;
 
@@ -60,7 +62,7 @@ public class SkinPls implements DedicatedServerModInitializer {
             InputStream inp;
             try {
                 URL url = new URL("https://api.mineskin.org/get/id/%d".formatted(id));
-                inp = url.openConnection().getInputStream();
+                inp = url.openStream();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -77,7 +79,44 @@ public class SkinPls implements DedicatedServerModInitializer {
     }
 
     private int executeMojang(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        context.getSource().sendFeedback(Text.of("This is not implemented yet."), false);
+        String username = getString(context, "username");
+        UUID uuid = context.getSource().getPlayer().getUuid();
+        GameProfile prof = new GameProfile(null, username);
+        executor.execute(() -> {
+            String targetUuid;
+            {
+                InputStream inp;
+                try {
+                    URL url = new URL("https://api.mojang.com/users/profiles/minecraft/%s".formatted(username));
+                    inp = url.openStream();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                JsonElement root = new JsonParser().parse(new InputStreamReader(inp));
+                targetUuid = root.getAsJsonObject().getAsJsonPrimitive("id").getAsString();
+            }
+            {
+                InputStream inp;
+                try {
+                    URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/%s?unsigned=false".formatted(targetUuid));
+                    inp = url.openStream();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                JsonElement root = new JsonParser().parse(new InputStreamReader(inp));
+                for (JsonElement e : root.getAsJsonObject().getAsJsonArray("properties")) {
+                    JsonObject obj = e.getAsJsonObject();
+                    if (obj.getAsJsonPrimitive("name").getAsString().equals("textures")) {
+                        String value, signature;
+                        value = obj.getAsJsonPrimitive("value").getAsString();
+                        signature = obj.getAsJsonPrimitive("signature").getAsString();
+                        DataManager.writeData(uuid, value, signature);
+                        context.getSource().sendFeedback(Text.of("Successfully fetched skin data. Please relog."), false);
+                        break;
+                    }
+                }
+            }
+        });
         return 1;
     }
 }
