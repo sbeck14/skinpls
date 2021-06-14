@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "skinpls",
+  "version": "${version}",
+  "name": "SkinPls",
+  "description": "Skins on offline servers.",
+  "authors": [
+    "sammko"
+  ],
+  "contact": {
+    "homepage": "https://github.com/sammko/skinpls-fabric",
+    "issues": "https://github.com/sammko/skinpls-fabric/issues",
+    "email": "samuel@cavoj.net"
+  },
+  "license": "MIT",
+  "environment": "server",
+  "mixins": [
+    "skinpls.mixins.json"
+  ],
+  "entrypoints": {
+    "server": [
+      "net.cavoj.skinpls.SkinPls"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "minecraft": "1.17.x",
+    "java": ">=16"
+  }
+}
