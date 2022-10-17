@@ -3,7 +3,6 @@ package net.cavoj.skinpls;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -21,7 +20,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.mojang.brigadier.arguments.IntegerArgumentType.getInteger;
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static net.minecraft.server.command.CommandManager.literal;
 import static net.minecraft.server.command.CommandManager.argument;
@@ -65,7 +63,7 @@ public class SkinPls implements DedicatedServerModInitializer {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            JsonElement root = new JsonParser().parse(new InputStreamReader(inp));
+            JsonElement root = JsonParser.parseReader(new InputStreamReader(inp));
             JsonObject obj = root.getAsJsonObject().getAsJsonObject("data").getAsJsonObject("texture");
             String value = obj.getAsJsonPrimitive("value").getAsString();
             String signature = obj.getAsJsonPrimitive("signature").getAsString();
@@ -90,7 +88,7 @@ public class SkinPls implements DedicatedServerModInitializer {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                JsonElement root = new JsonParser().parse(new InputStreamReader(inp));
+                JsonElement root = JsonParser.parseReader(new InputStreamReader(inp));
                 targetUuid = root.getAsJsonObject().getAsJsonPrimitive("id").getAsString();
             }
             {
@@ -101,7 +99,7 @@ public class SkinPls implements DedicatedServerModInitializer {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                JsonElement root = new JsonParser().parse(new InputStreamReader(inp));
+                JsonElement root = JsonParser.parseReader(new InputStreamReader(inp));
                 for (JsonElement e : root.getAsJsonObject().getAsJsonArray("properties")) {
                     JsonObject obj = e.getAsJsonObject();
                     if (obj.getAsJsonPrimitive("name").getAsString().equals("textures")) {
