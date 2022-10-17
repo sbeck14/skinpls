@@ -3,13 +3,12 @@ package net.cavoj.skinpls;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.DedicatedServerModInitializer;
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
@@ -40,10 +39,10 @@ public class SkinPls implements DedicatedServerModInitializer {
             this.executor.shutdownNow();
         });
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(literal("skinpls")
                 .then(literal("mineskin")
-                    .then(argument("id", IntegerArgumentType.integer())
+                    .then(argument("uuid", StringArgumentType.greedyString())
                         .executes(this::executeMineskin)
                     )
                 ).then(literal("mojang")
@@ -56,12 +55,12 @@ public class SkinPls implements DedicatedServerModInitializer {
     }
 
     private int executeMineskin(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        int id = getInteger(context, "id");
-        UUID uuid = context.getSource().getPlayer().getUuid();
+        String skin_uuid = getString(context, "uuid");
+        UUID player_uuid = context.getSource().getPlayerOrThrow().getUuid();
         executor.execute(() -> {
             InputStream inp;
             try {
-                URL url = new URL("https://api.mineskin.org/get/id/%d".formatted(id));
+                URL url = new URL("https://api.mineskin.org/get/uuid/%s".formatted(skin_uuid));
                 inp = url.openStream();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -70,7 +69,7 @@ public class SkinPls implements DedicatedServerModInitializer {
             JsonObject obj = root.getAsJsonObject().getAsJsonObject("data").getAsJsonObject("texture");
             String value = obj.getAsJsonPrimitive("value").getAsString();
             String signature = obj.getAsJsonPrimitive("signature").getAsString();
-            DataManager.writeData(uuid, value, signature);
+            DataManager.writeData(player_uuid, value, signature);
 
             // TODO can I do this from a random thread?
             context.getSource().sendFeedback(Text.of("Successfully fetched skin data. Please relog."), false);
@@ -80,8 +79,7 @@ public class SkinPls implements DedicatedServerModInitializer {
 
     private int executeMojang(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         String username = getString(context, "username");
-        UUID uuid = context.getSource().getPlayer().getUuid();
-        GameProfile prof = new GameProfile(null, username);
+        UUID uuid = context.getSource().getPlayerOrThrow().getUuid();
         executor.execute(() -> {
             String targetUuid;
             {
