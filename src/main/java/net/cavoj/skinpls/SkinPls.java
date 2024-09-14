@@ -70,7 +70,7 @@ public class SkinPls implements DedicatedServerModInitializer {
             DataManager.writeData(player_uuid, value, signature);
 
             // TODO can I do this from a random thread?
-            context.getSource().sendFeedback(Text.of("Successfully fetched skin data. Please relog."), false);
+            context.getSource().sendFeedback(() -> Text.of("Successfully fetched skin data. Please relog."), false);
         });
         return 1;
     }
@@ -107,7 +107,7 @@ public class SkinPls implements DedicatedServerModInitializer {
                         value = obj.getAsJsonPrimitive("value").getAsString();
                         signature = obj.getAsJsonPrimitive("signature").getAsString();
                         DataManager.writeData(uuid, value, signature);
-                        context.getSource().sendFeedback(Text.of("Successfully fetched skin data. Please relog."), false);
+                        context.getSource().sendFeedback(() -> Text.of("Successfully fetched skin data. Please relog."), false);
                         break;
                     }
                 }
